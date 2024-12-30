@@ -1,0 +1,79 @@
+version: '3.9'
+name: customer
+
+x-app-setup: &app-setup
+  image: 'customer-app:latest'
+  build:
+    args:
+      GROUP_ID: "${GROUP_ID}"
+      USER_ID: "${USER_ID}"
+    dockerfile: Dockerfile
+    context: .
+    additional_contexts:
+      - src-customer-app=../app
+  environment:
+    APPLICATION_TITLE: ${APPLICATION_TITLE}
+    APPLICATION_DEBUG: ${APPLICATION_DEBUG}
+    APPLICATION_VERSION: ${APPLICATION_VERSION}
+
+    DATABASE_HOST: ${DATABASE_HOST}
+    DATABASE_PORT: ${DATABASE_PORT}
+    DATABASE_DATABASE: ${DATABASE_DATABASE}
+    DATABASE_USERNAME: ${DATABASE_USERNAME}
+    DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+
+    RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+    RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    RABBITMQ_HOST: ${RABBITMQ_HOST}
+    RABBITMQ_PORT: ${RABBITMQ_PORT}
+  volumes:
+    - ../app/src:/app
+
+services:
+
+  web-app:
+    <<: *app-setup
+    ports:
+      - '${DOCKER_APPLICATION_EXPOSE_PORT}:${WEB_APPLICATION_PORT}'
+    entrypoint: [
+      "uvicorn", "interface.web.app:web_app",
+      "--host", "0.0.0.0",
+      "--port", "${WEB_APPLICATION_PORT}",
+      "--factory",
+      "--reload",
+    ]
+
+  category-queue-consumer:
+    <<: *app-setup
+    entrypoint: [
+      "faststream", "run",
+      "--reload",
+      "--factory",
+      "interface.queue.app:queue_app",
+    ]
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
+
+  migration-service:
+    <<: *app-setup
+    command: sh -c 'cd infrastructure/database/relational/migrations && alembic upgrade head'
+
+  asyncapi-docs:
+    <<: *app-setup
+    entrypoint: [
+      "faststream", "docs", "serve",
+      "--host", "0.0.0.0",
+      "--port", "${ASYNCAPI_DOCS_PORT}",
+      "--reload",
+      "--factory",
+      "interface.queue.app:queue_app",
+    ]
+    ports:
+      - "${DOCKER_ASYNCAPI_EXPOSE_PORT}:${ASYNCAPI_DOCS_PORT}"
+
+
+networks:
+  default:
+    name: deye-web-network
+    external: true

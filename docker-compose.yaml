@@ -1,0 +1,84 @@
+version: '3.9'
+name: infrastructure
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    hostname: rabbitmq
+    ports:
+      - '${DOCKER_RABBITMQ_EXPOSE_PORT}:15672'
+    restart: always
+    environment:
+      - "RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}"
+      - "RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}"
+      - "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}]"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  database:
+    image: 'postgres:latest'
+    restart: always
+    environment:
+      - "POSTGRES_USER=${POSTGRES_USERNAME}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+      - "POSTGRES_DB=postgres"
+    ports:
+      - '${DOCKER_DB_EXPOSE_PORT}:5432'
+    volumes:
+      - database_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d postgres" ]
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  resources-setup:
+    image: alpine
+    entrypoint: [ "sh","-c" ]
+    command:
+      - |
+        apk -q add curl python3 postgresql-client
+
+        curl --no-progress-meter -s -o /usr/local/bin/rabbitmqadmin http://${SETUP_RABBITMQ_HOST}:${SETUP_RABBITMQ_PORT}/cli/rabbitmqadmin
+        chmod +x /usr/local/bin/rabbitmqadmin
+
+        alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
+        alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -d postgres"
+
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CATEGORY_QUEUE} durable=true
+        rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
+        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_CATEGORY_QUEUE} routing_key=${SETUP_RABBITMQ_CATEGORY_QUEUE}
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ADMIN_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ADMIN_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_ADMIN_USERNAME} WITH PASSWORD '${SETUP_DB_ADMIN_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_ADMIN_DATABASE} OWNER TO ${SETUP_DB_ADMIN_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_ADMIN_DATABASE} to ${SETUP_DB_ADMIN_USERNAME}"
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_CUSTOMER_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_CUSTOMER_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_CUSTOMER_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_CUSTOMER_USERNAME} WITH PASSWORD '${SETUP_DB_CUSTOMER_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_CUSTOMER_DATABASE} OWNER TO ${SETUP_DB_CUSTOMER_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_CUSTOMER_DATABASE} to ${SETUP_DB_CUSTOMER_USERNAME}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+
+networks:
+  default:
+    name: deye-web-network
+    external: true
+
+volumes:
+  rabbitmq_data:
+  database_data:
