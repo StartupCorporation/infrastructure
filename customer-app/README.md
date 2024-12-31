@@ -55,6 +55,10 @@ export RABBITMQ_USERNAME=dev  # RabbitMQ User's name to connect
 export RABBITMQ_PASSWORD=devdev  # RabbitMQ User's password to connect
 export RABBITMQ_HOST=rabbitmq  # RabbitMQ host to connect
 export RABBITMQ_PORT=5672  # RabbitMQ port to connect
+
+## ==== RABBITMQ QUEUES
+export RABBITMQ_QUEUE_CATEGORY__NAME=customer.category.queue  # RabbitMQ category queue name
+export RABBITMQ_QUEUE_CATEGORY__DURABLE=1  # Boolean value that indicates whether the RabbitMQ category queue is durable
 ```
 
 ### Functions
