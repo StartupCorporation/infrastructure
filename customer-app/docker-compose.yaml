@@ -5,8 +5,8 @@ x-app-setup: &app-setup
   image: 'customer-app:latest'
   build:
     args:
-      GROUP_ID: "${GROUP_ID}"
-      USER_ID: "${USER_ID}"
+      GROUP_ID: "${DOCKER_CUSTOMER_IMAGE_GROUP_ID}"
+      USER_ID: "${DOCKER_CUSTOMER_IMAGE_USER_ID}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
@@ -34,7 +34,7 @@ services:
   web-app:
     <<: *app-setup
     ports:
-      - '${DOCKER_APPLICATION_EXPOSE_PORT}:${WEB_APPLICATION_PORT}'
+      - '${DOCKER_WEB_APPLICATION_EXPOSE_PORT}:${WEB_APPLICATION_PORT}'
     entrypoint: [
       "uvicorn", "interface.web.app:web_app",
       "--host", "0.0.0.0",
