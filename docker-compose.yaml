@@ -49,7 +49,7 @@ services:
         chmod +x /usr/local/bin/rabbitmqadmin
 
         alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
-        alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -d postgres"
+        alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -p ${SETUP_DB_PORT} -d postgres"
 
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CATEGORY_QUEUE} durable=true
         rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
