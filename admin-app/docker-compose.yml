@@ -1,0 +1,50 @@
+version: '3.9'
+name: admin
+
+services:
+
+  web-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      additional_contexts:
+        - src-admin-app=../app
+    environment:
+      - DB_USERNAME=${DATABASE_USERNAME}
+      - DB_PASSWORD=${DATABASE_PASSWORD}
+      - DB=${DATABASE_DATABASE}
+      - DB_HOST=${DATABASE_HOST}
+      - DB_PORT=${DATABASE_PORT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_URL=${MINIO_URL}
+    ports:
+      - "${DOCKER_ADMIN_APPLICATION_EXPOSE_PORT}:8080"
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  minio:
+    image: quay.io/minio/minio
+    ports:
+      - "${DOCKER_MINIO_EXPOSE_PORT_1}:9000"
+      - "${DOCKER_MINIO_EXPOSE_PORT_2}:9001"
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: "curl -k -f http://localhost:9001/minio/health/live || exit 1"
+      interval: 1s
+      timeout: 15s
+      retries: 30
+
+networks:
+  default:
+    name: deye-web-network
+    external: true
+
+volumes:
+  minio_data:

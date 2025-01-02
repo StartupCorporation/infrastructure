@@ -37,11 +37,11 @@ services:
   web-app:
     <<: *app-setup
     ports:
-      - '${DOCKER_WEB_APPLICATION_EXPOSE_PORT}:${WEB_APPLICATION_PORT}'
+      - '${DOCKER_CUSTOMER_APPLICATION_EXPOSE_PORT}:${CUSTOMER_APPLICATION_PORT}'
     entrypoint: [
       "uvicorn", "interface.web.app:web_app",
       "--host", "0.0.0.0",
-      "--port", "${WEB_APPLICATION_PORT}",
+      "--port", "${CUSTOMER_APPLICATION_PORT}",
       "--factory",
       "--reload",
     ]
