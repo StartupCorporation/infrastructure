@@ -23,13 +23,13 @@ The file contains the following variables:
 ## ======================================
 
 ## ==== DOCKER
-export DOCKER_APPLICATION_EXPOSE_PORT=8000  # Exposed port number of the customer web container
-export DOCKER_ASYNCAPI_EXPOSE_PORT=8080  # Exposed port number of the AsyncAPI documentation page
+export DOCKER_CUSTOMER_APPLICATION_EXPOSE_PORT=8000  # Exposed port number of the customer web container
 export DOCKER_CUSTOMER_IMAGE_GROUP_ID="$(id -g)" # ID for the user's group inside application container
 export DOCKER_CUSTOMER_IMAGE_USER_ID="$(id -u)" # ID for the user inside application container
+export DOCKER_ASYNCAPI_EXPOSE_PORT=8080  # Exposed port number of the AsyncAPI documentation page
 
-## ==== WEB APPLICATION
-export WEB_APPLICATION_PORT=8000  # What port is listening by the customer application
+## ==== CUSTOMER APPLICATION
+export CUSTOMER_APPLICATION_PORT=8000  # What port is listening by the customer application
 
 ## ==== ASYNCAPI
 export ASYNCAPI_DOCS_PORT=7000  # What port is used by AsyncAPI documentation page
