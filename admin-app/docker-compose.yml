@@ -18,33 +18,15 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_URL=${MINIO_URL}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_QUEUE_CATEGORY__NAME=${RABBITMQ_QUEUE_CATEGORY__NAME}
     ports:
       - "${DOCKER_ADMIN_APPLICATION_EXPOSE_PORT}:8080"
-    depends_on:
-      minio:
-        condition: service_healthy
-
-  minio:
-    image: quay.io/minio/minio
-    ports:
-      - "${DOCKER_MINIO_EXPOSE_PORT_1}:9000"
-      - "${DOCKER_MINIO_EXPOSE_PORT_2}:9001"
-    environment:
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: "curl -k -f http://localhost:9001/minio/health/live || exit 1"
-      interval: 1s
-      timeout: 15s
-      retries: 30
-
 networks:
   default:
     name: deye-web-network
     external: true
-
-volumes:
-  minio_data:
