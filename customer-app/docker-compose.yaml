@@ -1,4 +1,3 @@
-version: '3.9'
 name: customer
 
 x-app-setup: &app-setup
@@ -34,7 +33,7 @@ x-app-setup: &app-setup
 
 services:
 
-  web-app:
+  customer-web-app:
     <<: *app-setup
     ports:
       - '${DOCKER_CUSTOMER_APPLICATION_EXPOSE_PORT}:${CUSTOMER_APPLICATION_PORT}'

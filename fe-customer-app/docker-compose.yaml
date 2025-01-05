@@ -1,0 +1,22 @@
+name: fe-customer
+
+services:
+
+  customer-fe-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      additional_contexts:
+        - src-fe-customer-app=../app
+    environment:
+      API_URL: ${API_URL}
+      USE_MOCKS: ${USE_MOCKS}
+    ports:
+      - "${DOCKER_CUSTOMER_FE_APPLICATION_EXPOSE_PORT}:4000"
+    entrypoint: [ "node", "server/server.mjs" ]
+
+
+networks:
+  default:
+    name: deye-web-network
+    external: true
