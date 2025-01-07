@@ -50,9 +50,13 @@ services:
         alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
         alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -p ${SETUP_DB_PORT} -d postgres"
 
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CATEGORY_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE} durable=true
+
         rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_CATEGORY_QUEUE} routing_key=${SETUP_RABBITMQ_CATEGORY_QUEUE}
+
+        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE} routing_key=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE}
+        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE} routing_key=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE}
 
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
           | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ADMIN_DATABASE}"
