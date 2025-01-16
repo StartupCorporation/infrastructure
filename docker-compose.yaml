@@ -7,6 +7,7 @@ services:
     hostname: rabbitmq
     ports:
       - '${DOCKER_RABBITMQ_EXPOSE_PORT}:15672'
+      - '${DOCKER_RABBITMQ_EXPOSE_PORT_AMQP}:5672'
     restart: always
     environment:
       - "RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}"
