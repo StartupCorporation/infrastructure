@@ -25,9 +25,9 @@ x-app-setup: &app-setup
     - "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}"
     - "RABBITMQ_HOST=${RABBITMQ_HOST}"
     - "RABBITMQ_PORT=${RABBITMQ_PORT}"
-    - 'RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE={"NAME": "${RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE_NAME}", "EXCHANGE": "${RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE_EXCHANGE}"}'
+    - "RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE=${RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE}"
 
-    - 'RABBITMQ_CUSTOMER_CATEGORY_QUEUE={"NAME": "${RABBITMQ_CUSTOMER_CATEGORY_QUEUE_NAME}", "DURABLE": "${RABBITMQ_CUSTOMER_CATEGORY_QUEUE_DURABLE}"}'
+    - "RABBITMQ_CUSTOMER_CATEGORY_QUEUE=${RABBITMQ_CUSTOMER_CATEGORY_QUEUE}"
   volumes:
     - ../app/src:/app
 
@@ -44,6 +44,9 @@ services:
       "--factory",
       "--reload",
     ]
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
 
   category-queue-consumer:
     <<: *app-setup
@@ -56,22 +59,22 @@ services:
       migration-service:
         condition: service_completed_successfully
 
+  tl-outbox-process:
+    <<: *app-setup
+    command: [
+      "python", "interface/cli/app.py",
+      "tl-outbox", "process",
+      "--timeout", "10",
+      "--events-count", "100",
+    ]
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
+
   migration-service:
     <<: *app-setup
-    command: sh -c 'cd infrastructure/database/relational/migrations && alembic upgrade head'
-
-  asyncapi-docs:
-    <<: *app-setup
-    entrypoint: [
-      "faststream", "docs", "serve",
-      "--host", "0.0.0.0",
-      "--port", "${ASYNCAPI_DOCS_PORT}",
-      "--factory",
-      "interface.queue.app:queue_app",
-    ]
-    ports:
-      - "${DOCKER_ASYNCAPI_EXPOSE_PORT}:${ASYNCAPI_DOCS_PORT}"
-
+    working_dir: /app/infrastructure/database/relational/migrations
+    command: [ "alembic", "upgrade", "head" ]
 
 networks:
   default:
