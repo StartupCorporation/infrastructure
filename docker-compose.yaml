@@ -22,8 +22,7 @@ services:
       retries: 15
 
   database:
-    image: 'postgres:latest'
-    restart: always
+    image: postgres:latest
     environment:
       - "POSTGRES_USER=${POSTGRES_USERNAME}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
