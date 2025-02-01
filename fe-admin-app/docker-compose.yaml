@@ -1,0 +1,24 @@
+name: fe-admin
+
+services:
+
+  admin-fe-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      additional_contexts:
+        - src-fe-admin-app=../app
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      VITE_PORT: ${VITE_PORT}
+      VITE_API_SERVER: ${VITE_API-SERVER}
+      VITE_NGINX_SERVER: ${VITE_NGINX_SERVER}
+    ports:
+      - "${DOCKER_ADMIN_FE_APPLICATION_EXPOSE_PORT}:${VITE_PORT}"
+    entrypoint: [ "node", "server.js" ]
+
+
+networks:
+  default:
+    name: deye-web-network
+    external: true
