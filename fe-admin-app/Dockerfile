@@ -1,4 +1,8 @@
 FROM node:lts-alpine
+ARG NODE_ENV=$NODE_ENV
+ARG VITE_PORT=$VITE_PORT
+ARG VITE_API_SERVER=$VITE_API_SERVER
+ARG VITE_NGINX_SERVER=$VITE_NGINX_SERVER
 
 WORKDIR /app
 
@@ -6,4 +10,5 @@ COPY --from=src-fe-admin-app package.json ./
 RUN npm i
 
 COPY --from=src-fe-admin-app . .
-RUN npm run build
+RUN echo -e "NODE_ENV=${NODE_ENV}\nVITE_PORT=${VITE_PORT}\nVITE_API_SERVER=${VITE_API_SERVER}\nVITE_NGINX_SERVER=${VITE_NGINX_SERVER}" > .env && \
+  npm run build

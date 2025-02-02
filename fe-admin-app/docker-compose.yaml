@@ -8,11 +8,11 @@ services:
       context: .
       additional_contexts:
         - src-fe-admin-app=../app
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      VITE_PORT: ${VITE_PORT}
-      VITE_API_SERVER: ${VITE_API_SERVER}
-      VITE_NGINX_SERVER: ${VITE_NGINX_SERVER}
+      args:
+        NODE_ENV: "${NODE_ENV}"
+        VITE_PORT: "${VITE_PORT}"
+        VITE_API_SERVER: "${VITE_API_SERVER}"
+        VITE_NGINX_SERVER: "${VITE_NGINX_SERVER}"
     ports:
       - "${DOCKER_ADMIN_FE_APPLICATION_EXPOSE_PORT}:${VITE_PORT}"
     entrypoint: [ "node", "server.js" ]
