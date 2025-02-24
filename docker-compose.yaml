@@ -94,26 +94,6 @@ services:
         alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
         alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -p ${SETUP_DB_PORT} -d postgres"
 
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CUSTOMER_PRODUCT_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_CATEGORY_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_PRODUCT_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ADMIN_CALLBACK_REQUEST_QUEUE} durable=true
-
-        rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
-
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE} routing_key=${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE}
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_CUSTOMER_PRODUCT_QUEUE} routing_key=${SETUP_RABBITMQ_CUSTOMER_PRODUCT_QUEUE}
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE} routing_key=${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE}
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_CATEGORY_QUEUE} routing_key=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_CATEGORY_QUEUE}
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_PRODUCT_QUEUE} routing_key=${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_PRODUCT_QUEUE}
-        rabbitmqadmin declare binding source=${SETUP_RABBITMQ_EXCHANGE_NAME} destination=${SETUP_RABBITMQ_DEAD_LETTER_ADMIN_CALLBACK_REQUEST_QUEUE} routing_key=${SETUP_RABBITMQ_DEAD_LETTER_ADMIN_CALLBACK_REQUEST_QUEUE}
-
-        rabbitmqadmin declare policy name="DLXCustomerCategoryQueue" pattern="^${SETUP_RABBITMQ_CUSTOMER_CATEGORY_QUEUE}$" definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_CATEGORY_QUEUE}"}' apply-to=queues
-        rabbitmqadmin declare policy name="DLXCustomerProductQueue" pattern="^${SETUP_RABBITMQ_CUSTOMER_PRODUCT_QUEUE}$" definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_CUSTOMER_PRODUCT_QUEUE}"}' apply-to=queues
-        rabbitmqadmin declare policy name="DLXAdminCallbackRequestQueue" pattern="^${SETUP_RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE}$" definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_ADMIN_CALLBACK_REQUEST_QUEUE}"}' apply-to=queues
-
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
           | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ADMIN_DATABASE}"
         psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ADMIN_USERNAME}'" \
@@ -121,12 +101,12 @@ services:
         psql -c "ALTER DATABASE ${SETUP_DB_ADMIN_DATABASE} OWNER TO ${SETUP_DB_ADMIN_USERNAME}"
         psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_ADMIN_DATABASE} to ${SETUP_DB_ADMIN_USERNAME}"
 
-        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_CUSTOMER_DATABASE}'" \
-          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_CUSTOMER_DATABASE}"
-        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_CUSTOMER_USERNAME}'" \
-          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_CUSTOMER_USERNAME} WITH PASSWORD '${SETUP_DB_CUSTOMER_PASSWORD}'"
-        psql -c "ALTER DATABASE ${SETUP_DB_CUSTOMER_DATABASE} OWNER TO ${SETUP_DB_CUSTOMER_USERNAME}"
-        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_CUSTOMER_DATABASE} to ${SETUP_DB_CUSTOMER_USERNAME}"
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_COMMENT_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_COMMENT_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_COMMENT_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_COMMENT_USERNAME} WITH PASSWORD '${SETUP_DB_COMMENT_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_COMMENT_DATABASE} OWNER TO ${SETUP_DB_COMMENT_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_COMMENT_DATABASE} to ${SETUP_DB_COMMENT_USERNAME}"
     depends_on:
       rabbitmq:
         condition: service_healthy

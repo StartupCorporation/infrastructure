@@ -4,7 +4,7 @@ ARG USER_ID
 
 FROM python:3.12 AS dependencies
 
-COPY --from=src-customer-app requirements.txt .
+COPY --from=src-comment-app requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt --prefix=venv
 
 
@@ -19,7 +19,7 @@ ENV PYTHONPATH="/app"
 WORKDIR /app
 
 COPY --from=dependencies /venv /usr/local
-COPY --from=src-customer-app ./src .
+COPY --from=src-comment-app ./src .
 
 RUN groupadd -g $GROUP_ID appgroup && \
     useradd -u $USER_ID -g $GROUP_ID appuser
