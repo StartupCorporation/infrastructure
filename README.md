@@ -5,14 +5,14 @@ Repository for handling the Deye Web project infrastructure.
 ## Structure
 
 The repository contains infrastructure for deye-web applications:
-* Customer microservice
+* Comment microservice
 * Admin microservice
 * Customer frontend application
 * Admin frontend application
 * Deye-web core infrastructure
 
 All this stuff is located in corresponding directories, like:
-* Customer microservice's infrastructure -> `customer-app` directory
+* Comment microservice's infrastructure -> `comment-app` directory
 * Admin microservice's infrastructure -> `admin-app` directory
 * etc.
 

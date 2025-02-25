@@ -1,15 +1,15 @@
-name: customer
+name: comment
 
 x-app-setup: &app-setup
-  image: 'customer-app:latest'
+  image: 'comment-app:latest'
   build:
     args:
-      GROUP_ID: "${DOCKER_CUSTOMER_IMAGE_GROUP_ID}"
-      USER_ID: "${DOCKER_CUSTOMER_IMAGE_USER_ID}"
+      GROUP_ID: "${DOCKER_COMMENT_IMAGE_GROUP_ID}"
+      USER_ID: "${DOCKER_COMMENT_IMAGE_USER_ID}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
-      - src-customer-app=../app
+      - src-comment-app=../app
   environment:
     - "APPLICATION_TITLE=${APPLICATION_TITLE}"
     - "APPLICATION_DEBUG=${APPLICATION_DEBUG}"
@@ -25,48 +25,21 @@ x-app-setup: &app-setup
     - "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}"
     - "RABBITMQ_HOST=${RABBITMQ_HOST}"
     - "RABBITMQ_PORT=${RABBITMQ_PORT}"
-    - "RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE=${RABBITMQ_ADMIN_CALLBACK_REQUEST_QUEUE}"
-
-    - "RABBITMQ_CUSTOMER_CATEGORY_QUEUE=${RABBITMQ_CUSTOMER_CATEGORY_QUEUE}"
-    - "RABBITMQ_CUSTOMER_PRODUCT_QUEUE=${RABBITMQ_CUSTOMER_PRODUCT_QUEUE}"
   volumes:
     - ../app/src:/app
 
 services:
 
-  customer-web-app:
+  comment-web-app:
     <<: *app-setup
     ports:
-      - '${DOCKER_CUSTOMER_APPLICATION_EXPOSE_PORT}:${CUSTOMER_APPLICATION_PORT}'
+      - '${DOCKER_COMMENT_APPLICATION_EXPOSE_PORT}:${COMMENT_APPLICATION_PORT}'
     entrypoint: [
       "uvicorn", "interface.web.app:web_app",
       "--host", "0.0.0.0",
-      "--port", "${CUSTOMER_APPLICATION_PORT}",
+      "--port", "${COMMENT_APPLICATION_PORT}",
       "--factory",
       "--reload",
-    ]
-    depends_on:
-      migration-service:
-        condition: service_completed_successfully
-
-  queue-consumer:
-    <<: *app-setup
-    entrypoint: [
-      "faststream", "run",
-      "--factory",
-      "interface.queue.app:queue_app",
-    ]
-    depends_on:
-      migration-service:
-        condition: service_completed_successfully
-
-  tl-outbox-process:
-    <<: *app-setup
-    command: [
-      "python", "interface/cli/app.py",
-      "tl-outbox", "process",
-      "--timeout", "10",
-      "--events-count", "100",
     ]
     depends_on:
       migration-service:
