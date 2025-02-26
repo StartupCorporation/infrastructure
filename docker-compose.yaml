@@ -94,6 +94,26 @@ services:
         alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
         alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -p ${SETUP_DB_PORT} -d postgres"
 
+        rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}
+
+        rabbitmqadmin declare policy \
+          name="DLXCommentProductQueue" \
+          pattern="^${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}"}' \
+          apply-to=queues
+
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
           | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ADMIN_DATABASE}"
         psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ADMIN_USERNAME}'" \

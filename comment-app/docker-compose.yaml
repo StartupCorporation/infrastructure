@@ -10,21 +10,21 @@ x-app-setup: &app-setup
     context: .
     additional_contexts:
       - src-comment-app=../app
-  environment:
-    - "APPLICATION_TITLE=${APPLICATION_TITLE}"
-    - "APPLICATION_DEBUG=${APPLICATION_DEBUG}"
-    - "APPLICATION_VERSION=${APPLICATION_VERSION}"
+  environment: &app-env
+    APPLICATION_TITLE: ${APPLICATION_TITLE}
+    APPLICATION_DEBUG: ${APPLICATION_DEBUG}
+    APPLICATION_VERSION: ${APPLICATION_VERSION}
 
-    - "DATABASE_HOST=${DATABASE_HOST}"
-    - "DATABASE_PORT=${DATABASE_PORT}"
-    - "DATABASE_DATABASE=${DATABASE_DATABASE}"
-    - "DATABASE_USERNAME=${DATABASE_USERNAME}"
-    - "DATABASE_PASSWORD=${DATABASE_PASSWORD}"
+    DATABASE_USERNAME: ${DATABASE_USERNAME}
+    DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    DATABASE_HOST: ${DATABASE_HOST}
+    DATABASE_PORT: ${DATABASE_PORT}
+    DATABASE_DATABASE: ${DATABASE_DATABASE}
 
-    - "RABBITMQ_USERNAME=${RABBITMQ_USERNAME}"
-    - "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}"
-    - "RABBITMQ_HOST=${RABBITMQ_HOST}"
-    - "RABBITMQ_PORT=${RABBITMQ_PORT}"
+    RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+    RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    RABBITMQ_HOST: ${RABBITMQ_HOST}
+    RABBITMQ_PORT: ${RABBITMQ_PORT}
   volumes:
     - ../app/src:/app
 
@@ -41,6 +41,20 @@ services:
       "--factory",
       "--reload",
     ]
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
+
+  queue-consumer:
+    <<: *app-setup
+    entrypoint: [
+      "faststream", "run",
+      "--factory",
+      "interface.queue.app:queue_app",
+    ]
+    environment:
+      <<: *app-env
+      RABBITMQ_COMMENT_PRODUCT_QUEUE: "${RABBITMQ_COMMENT_PRODUCT_QUEUE}"
     depends_on:
       migration-service:
         condition: service_completed_successfully
