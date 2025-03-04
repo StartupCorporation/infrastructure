@@ -1,0 +1,22 @@
+name: identity-and-access
+
+services:
+
+  identity-and-access-web-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      additional_contexts:
+        - src-identity-and-access-app=../app
+    environment:
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_DATABASE=${DATABASE_DATABASE}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT}
+    ports:
+      - "${DOCKER_IDENTITY_AND_ACCESS_APPLICATION_EXPOSE_PORT}:8080"
+networks:
+  default:
+    name: deye-web-network
+    external: true
