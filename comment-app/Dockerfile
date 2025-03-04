@@ -2,13 +2,13 @@ ARG GROUP_ID
 ARG USER_ID
 
 
-FROM python:3.12 AS dependencies
+FROM python:3.13 AS dependencies
 
-COPY --from=src-comment-app requirements.txt .
+COPY --from=src-comment-app requirements/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt --prefix=venv
 
 
-FROM python:3.12-slim AS base-app
+FROM python:3.13-slim AS base-app
 ARG GROUP_ID
 ARG USER_ID
 
