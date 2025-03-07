@@ -8,7 +8,6 @@ The repository contains infrastructure for deye-web applications:
 * Comment microservice
 * Admin microservice
 * Customer frontend application
-* Admin frontend application
 * Deye-web core infrastructure
 
 All this stuff is located in corresponding directories, like:
