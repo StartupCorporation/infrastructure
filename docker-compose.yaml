@@ -97,6 +97,8 @@ services:
         rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE} durable=true
 
         rabbitmqadmin declare binding \
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
@@ -108,10 +110,26 @@ services:
           destination=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} \
           routing_key=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}
 
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_ORDER_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_ORDER_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE}
+
         rabbitmqadmin declare policy \
           name="DLXCommentProductQueue" \
           pattern="^${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}$" \
           definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}"}' \
+          apply-to=queues
+
+        rabbitmqadmin declare policy \
+          name="DLXOrderQueue" \
+          pattern="^${SETUP_RABBITMQ_ORDER_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE}"}' \
           apply-to=queues
 
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
@@ -134,6 +152,13 @@ services:
           | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME} WITH PASSWORD '${SETUP_DB_IDENTITY_AND_ACCESS_PASSWORD}'"
         psql -c "ALTER DATABASE ${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE} OWNER TO ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME}"
         psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE} TO ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME}"
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ORDER_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ORDER_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ORDER_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_ORDER_USERNAME} WITH PASSWORD '${SETUP_DB_ORDER_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_ORDER_DATABASE} OWNER TO ${SETUP_DB_ORDER_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_ORDER_DATABASE} TO ${SETUP_DB_ORDER_USERNAME}"
     depends_on:
       rabbitmq:
         condition: service_healthy
