@@ -30,7 +30,8 @@ x-app-setup: &app-setup
 
 services:
 
-  comment-web-app:
+  backend-app:
+    container_name: comment-microservice
     <<: *app-setup
     ports:
       - '${DOCKER_COMMENT_APPLICATION_EXPOSE_PORT}:${COMMENT_APPLICATION_PORT}'
@@ -46,6 +47,7 @@ services:
         condition: service_completed_successfully
 
   queue-consumer:
+    container_name: comment-queue-consumer
     <<: *app-setup
     entrypoint: [
       "faststream", "run",

@@ -1,13 +1,14 @@
-name: admin
+name: catalog
 
 services:
 
-  admin-web-app:
+  backend-app:
+    container_name: catalog-microservice
     build:
       dockerfile: Dockerfile
       context: .
       additional_contexts:
-        - src-admin-app=../app
+        - src-catalog-app=../app
     environment:
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
@@ -25,7 +26,7 @@ services:
       - RABBITMQ_QUEUE_CATEGORY__NAME=${RABBITMQ_QUEUE_CATEGORY__NAME}
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
     ports:
-      - "${DOCKER_ADMIN_APPLICATION_EXPOSE_PORT}:8080"
+      - "${DOCKER_CATALOG_APPLICATION_EXPOSE_PORT}:8080"
 networks:
   default:
     name: deye-web-network

@@ -3,6 +3,7 @@ name: infrastructure
 services:
 
   rabbitmq:
+    container_name: rabbitmq
     image: rabbitmq:4.0.5-management
     hostname: rabbitmq
     ports:
@@ -22,6 +23,7 @@ services:
       retries: 15
 
   database:
+    container_name: database
     image: postgres:latest
     environment:
       - "POSTGRES_USER=${POSTGRES_USERNAME}"
@@ -38,6 +40,7 @@ services:
       retries: 15
 
   nginx:
+    container_name: nginx
     image: nginx:1.24-alpine
     ports:
       - '${DOCKER_NGINX_EXPOSE_PORT}:9999'
@@ -49,6 +52,7 @@ services:
         condition: service_healthy
 
   minio:
+    container_name: minio
     image: quay.io/minio/minio
     ports:
       - "${DOCKER_MINIO_EXPOSE_PORT_UI}:9000"
@@ -65,29 +69,18 @@ services:
       timeout: 15s
       retries: 30
 
-  create_bucket:
-    image: minio/mc
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
-      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: [ "sh","-c" ]
-    command:
-      - |
-        mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
-        mc mb myminio/${MINIO_BUCKET_NAME};
-        mc anonymous set download myminio/${MINIO_BUCKET_NAME};
-
   resources-setup:
+    container_name: resources-setup-script
     image: alpine
     entrypoint: [ "sh","-c" ]
     command:
       - |
-        apk -q add curl python3 postgresql-client
+        apk -q add curl python3 postgresql-client minio-client
 
+        mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY}
+        mc mb myminio/${MINIO_BUCKET_NAME}
+        mc anonymous set download myminio/${MINIO_BUCKET_NAME}
+        
         curl --no-progress-meter -s -o /usr/local/bin/rabbitmqadmin http://${SETUP_RABBITMQ_HOST}:${SETUP_RABBITMQ_PORT}/cli/rabbitmqadmin
         chmod +x /usr/local/bin/rabbitmqadmin
 
@@ -114,12 +107,12 @@ services:
           definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}"}' \
           apply-to=queues
 
-        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
-          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ADMIN_DATABASE}"
-        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ADMIN_USERNAME}'" \
-          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_ADMIN_USERNAME} WITH PASSWORD '${SETUP_DB_ADMIN_PASSWORD}'"
-        psql -c "ALTER DATABASE ${SETUP_DB_ADMIN_DATABASE} OWNER TO ${SETUP_DB_ADMIN_USERNAME}"
-        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_ADMIN_DATABASE} TO ${SETUP_DB_ADMIN_USERNAME}"
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_CATALOG_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_CATALOG_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_CATALOG_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_CATALOG_USERNAME} WITH PASSWORD '${SETUP_DB_CATALOG_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_CATALOG_DATABASE} OWNER TO ${SETUP_DB_CATALOG_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_CATALOG_DATABASE} TO ${SETUP_DB_CATALOG_USERNAME}"
 
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_COMMENT_DATABASE}'" \
           | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_COMMENT_DATABASE}"
@@ -139,7 +132,8 @@ services:
         condition: service_healthy
       database:
         condition: service_healthy
-
+      minio:
+        condition: service_healthy
 networks:
   default:
     name: deye-web-network

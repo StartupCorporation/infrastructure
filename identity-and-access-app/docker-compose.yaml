@@ -2,7 +2,8 @@ name: identity-and-access
 
 services:
 
-  identity-and-access-web-app:
+  backend-app:
+    container_name: identity-and-access-microservice
     build:
       dockerfile: Dockerfile
       context: .

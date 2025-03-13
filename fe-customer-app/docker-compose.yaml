@@ -1,8 +1,9 @@
-name: fe-customer
+name: customer
 
 services:
 
-  customer-fe-app:
+  frontend-app:
+    container_name: customer-frontend
     build:
       dockerfile: Dockerfile
       context: .
