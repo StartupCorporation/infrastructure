@@ -1,4 +1,4 @@
-# catalog Microservice Infrastructure
+# Сatalog Microservice Infrastructure
 
 The catalog microservice infrastructure-related code.
 
