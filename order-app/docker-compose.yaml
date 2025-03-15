@@ -1,15 +1,15 @@
 name: order
 
 x-app-setup: &app-setup
-  image: 'order-app:latest'
-  build:
+  build: &app-build
     args:
       GROUP_ID: "${DOCKER_ORDER_IMAGE_GROUP_ID}"
       USER_ID: "${DOCKER_ORDER_IMAGE_USER_ID}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
-      - src-order-app=../app
+      - order-app=../app
+      - shared-kernel=../../dw_shared_kernel
   environment: &app-env
     APPLICATION_TITLE: ${APPLICATION_TITLE}
     APPLICATION_DEBUG: ${APPLICATION_DEBUG}
@@ -25,13 +25,20 @@ x-app-setup: &app-setup
     RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     RABBITMQ_HOST: ${RABBITMQ_HOST}
     RABBITMQ_PORT: ${RABBITMQ_PORT}
+    RABBITMQ_CATALOG_RESERVATION_QUEUE: ${RABBITMQ_CATALOG_RESERVATION_QUEUE}
   volumes:
     - ../app/src:/app
+    - ../../dw_shared_kernel/src/dw_shared_kernel:/usr/local/lib/python3.13/site-packages/dw_shared_kernel
 
 services:
 
   order-web-app:
     <<: *app-setup
+    image: startupcorp/order-web-app
+    container_name: order-web-app
+    build:
+      <<: *app-build
+      target: web-app
     ports:
       - '${DOCKER_ORDER_APPLICATION_EXPOSE_PORT}:${ORDER_APPLICATION_PORT}'
     entrypoint: [
@@ -40,6 +47,8 @@ services:
       "--port", "${ORDER_APPLICATION_PORT}",
       "--factory",
       "--reload",
+      "--reload-dir", "/usr/local/lib/python3.13/site-packages/dw_shared_kernel",
+      "--reload-dir", ".",
     ]
     depends_on:
       migration-service:
@@ -47,9 +56,15 @@ services:
 
   queue-consumer:
     <<: *app-setup
+    image: startupcorp/order-queue-consumer
+    container_name: order-queue-consumer
+    build:
+      <<: *app-build
+      target: queue-consumer
     entrypoint: [
       "faststream", "run",
       "--factory",
+      "--reload",
       "interface.queue.app:queue_app",
     ]
     environment:
@@ -61,7 +76,14 @@ services:
 
   migration-service:
     <<: *app-setup
-    working_dir: /app/infrastructure/database/relational/migrations
+    image: startupcorp/order-migration-service
+    container_name: order-migration-service
+    build:
+      <<: *app-build
+      target: migration-service
+    command: "migration-run"
+    volumes:
+      - ../app/src/infrastructure/database/relational/migrations/:/app/migrations
 
 networks:
   default:
