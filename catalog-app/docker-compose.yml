@@ -2,8 +2,9 @@ name: catalog
 
 services:
 
-  backend-app:
-    container_name: catalog-microservice
+  catalog-backend-app:
+    container_name: catalog-backend-app
+    image: startupcorp/catalog-backend-app
     build:
       dockerfile: Dockerfile
       context: .

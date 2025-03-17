@@ -2,8 +2,9 @@ name: customer
 
 services:
 
-  frontend-app:
-    container_name: customer-frontend
+  customer-frontend-app:
+    container_name: customer-frontend-app
+    image: startupcorp/customer-frontend-app
     build:
       dockerfile: Dockerfile
       context: .
