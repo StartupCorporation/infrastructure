@@ -1,0 +1,91 @@
+name: order
+
+x-app-setup: &app-setup
+  build: &app-build
+    args:
+      GROUP_ID: "${DOCKER_ORDER_IMAGE_GROUP_ID}"
+      USER_ID: "${DOCKER_ORDER_IMAGE_USER_ID}"
+    dockerfile: Dockerfile
+    context: .
+    additional_contexts:
+      - order-app=../app
+      - shared-kernel=../../dw_shared_kernel
+  environment: &app-env
+    APPLICATION_TITLE: ${APPLICATION_TITLE}
+    APPLICATION_DEBUG: ${APPLICATION_DEBUG}
+    APPLICATION_VERSION: ${APPLICATION_VERSION}
+
+    DATABASE_USERNAME: ${DATABASE_USERNAME}
+    DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    DATABASE_HOST: ${DATABASE_HOST}
+    DATABASE_PORT: ${DATABASE_PORT}
+    DATABASE_DATABASE: ${DATABASE_DATABASE}
+
+    RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+    RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    RABBITMQ_HOST: ${RABBITMQ_HOST}
+    RABBITMQ_PORT: ${RABBITMQ_PORT}
+    RABBITMQ_CATALOG_RESERVATION_QUEUE: ${RABBITMQ_CATALOG_RESERVATION_QUEUE}
+  volumes:
+    - ../app/src:/app
+    - ../../dw_shared_kernel/src/dw_shared_kernel:/usr/local/lib/python3.13/site-packages/dw_shared_kernel
+
+services:
+
+  order-backend-app:
+    <<: *app-setup
+    image: startupcorp/order-backend-app
+    container_name: order-backend-app
+    build:
+      <<: *app-build
+      target: backend-app
+    ports:
+      - '${DOCKER_ORDER_APPLICATION_EXPOSE_PORT}:${ORDER_APPLICATION_PORT}'
+    entrypoint: [
+      "uvicorn", "interface.web.app:web_app",
+      "--host", "0.0.0.0",
+      "--port", "${ORDER_APPLICATION_PORT}",
+      "--factory",
+      "--reload",
+      "--reload-dir", "/usr/local/lib/python3.13/site-packages/dw_shared_kernel",
+      "--reload-dir", ".",
+    ]
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
+
+  queue-consumer:
+    <<: *app-setup
+    image: startupcorp/order-queue-consumer
+    container_name: order-queue-consumer
+    build:
+      <<: *app-build
+      target: queue-consumer
+    entrypoint: [
+      "faststream", "run",
+      "--factory",
+      "--reload",
+      "interface.queue.app:queue_app",
+    ]
+    environment:
+      <<: *app-env
+      RABBITMQ_ORDER_QUEUE: ${RABBITMQ_ORDER_QUEUE}
+    depends_on:
+      migration-service:
+        condition: service_completed_successfully
+
+  migration-service:
+    <<: *app-setup
+    image: startupcorp/order-migration-service
+    container_name: order-migration-service
+    build:
+      <<: *app-build
+      target: migration-service
+    command: "migration-run"
+    volumes:
+      - ../app/src/infrastructure/database/relational/migrations/:/app/migrations
+
+networks:
+  default:
+    name: deye-web-network
+    external: true
