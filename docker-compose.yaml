@@ -90,7 +90,7 @@ services:
         rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} durable=true
 
         rabbitmqadmin declare binding \

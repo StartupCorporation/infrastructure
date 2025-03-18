@@ -51,10 +51,10 @@ services:
       "--reload-dir", ".",
     ]
     depends_on:
-      migration-service:
+      order-migration-service:
         condition: service_completed_successfully
 
-  queue-consumer:
+  order-queue-consumer:
     <<: *app-setup
     image: startupcorp/order-queue-consumer
     container_name: order-queue-consumer
@@ -64,17 +64,16 @@ services:
     entrypoint: [
       "faststream", "run",
       "--factory",
-      "--reload",
       "interface.queue.app:queue_app",
     ]
     environment:
       <<: *app-env
       RABBITMQ_ORDER_QUEUE: ${RABBITMQ_ORDER_QUEUE}
     depends_on:
-      migration-service:
+      order-migration-service:
         condition: service_completed_successfully
 
-  migration-service:
+  order-migration-service:
     <<: *app-setup
     image: startupcorp/order-migration-service
     container_name: order-migration-service
