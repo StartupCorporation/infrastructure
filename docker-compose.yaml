@@ -90,6 +90,8 @@ services:
         rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} durable=true
 
@@ -102,6 +104,16 @@ services:
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
           destination=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} \
           routing_key=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}
+        
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE}
+        
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE}
 
         rabbitmqadmin declare binding \
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
@@ -117,6 +129,12 @@ services:
           name="DLXCommentProductQueue" \
           pattern="^${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}$" \
           definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}"}' \
+          apply-to=queues
+        
+        rabbitmqadmin declare policy \
+          name="DLXReservationQueue" \
+          pattern="^${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE}"}' \
           apply-to=queues
 
         rabbitmqadmin declare policy \
@@ -159,6 +177,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+
 networks:
   default:
     name: deye-web-network
