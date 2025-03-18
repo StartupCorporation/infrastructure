@@ -21,7 +21,7 @@ RUN groupadd -g $GROUP_ID appgroup && \
     chown appuser /app
 
 
-FROM base-app AS web-app
+FROM base-app AS backend-app
 COPY --from=dependencies /web-service-venv /usr/local
 COPY --from=order-app ./src .
 USER appuser

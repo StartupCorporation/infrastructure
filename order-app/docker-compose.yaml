@@ -32,13 +32,13 @@ x-app-setup: &app-setup
 
 services:
 
-  order-web-app:
+  order-backend-app:
     <<: *app-setup
-    image: startupcorp/order-web-app
-    container_name: order-web-app
+    image: startupcorp/order-backend-app
+    container_name: order-backend-app
     build:
       <<: *app-build
-      target: web-app
+      target: backend-app
     ports:
       - '${DOCKER_ORDER_APPLICATION_EXPOSE_PORT}:${ORDER_APPLICATION_PORT}'
     entrypoint: [

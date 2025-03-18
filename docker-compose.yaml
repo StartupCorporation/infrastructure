@@ -98,7 +98,7 @@ services:
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
         rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_QUEUE} durable=true
-        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} durable=true
 
         rabbitmqadmin declare binding \
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
@@ -112,13 +112,13 @@ services:
 
         rabbitmqadmin declare binding \
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
-          destination=${SETUP_RABBITMQ_ORDER_QUEUE} \
-          routing_key=${SETUP_RABBITMQ_ORDER_QUEUE}
+          destination=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE}
 
         rabbitmqadmin declare binding \
           source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
-          destination=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE} \
-          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE}
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE}
 
         rabbitmqadmin declare policy \
           name="DLXCommentProductQueue" \
@@ -128,8 +128,8 @@ services:
 
         rabbitmqadmin declare policy \
           name="DLXOrderQueue" \
-          pattern="^${SETUP_RABBITMQ_ORDER_QUEUE}$" \
-          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_ORDER_QUEUE}"}' \
+          pattern="^${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE}"}' \
           apply-to=queues
 
         psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ADMIN_DATABASE}'" \
