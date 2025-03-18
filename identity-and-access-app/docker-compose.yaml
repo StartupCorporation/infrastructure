@@ -2,7 +2,9 @@ name: identity-and-access
 
 services:
 
-  identity-and-access-web-app:
+  iac-backend-app:
+    container_name: iac-backend-app
+    image: startupcorp/iac-backend-app
     build:
       dockerfile: Dockerfile
       context: .

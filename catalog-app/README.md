@@ -1,14 +1,14 @@
-# Admin Microservice Infrastructure
+# Сatalog Microservice Infrastructure
 
-The admin microservice infrastructure-related code.
+The catalog microservice infrastructure-related code.
 
 ## Configuration
 
-The `.env.local` is a file to configure the admin microservice. Moreover, it contains functions to run common
+The `.env.local` is a file to configure the catalog microservice. Moreover, it contains functions to run common
 commands, such as:
 
-* Start the admin microservice
-* Stops the admin microservice
+* Start the catalog microservice
+* Stops the catalog microservice
 * etc.
 
 ## .env.local
@@ -23,7 +23,7 @@ The file contains the following variables:
 ## ======================================
 
 ## ==== DOCKER
-export DOCKER_ADMIN_APPLICATION_EXPOSE_PORT=8090  # Exposed port number of the admin web container
+export DOCKER_CATALOG_APPLICATION_EXPOSE_PORT=8090  # Exposed port number of the catalog web container
 export DOCKER_MINIO_EXPOSE_PORT_1=9000  # First exposed port number of the minio container
 export DOCKER_MINIO_EXPOSE_PORT_2=9001  # Second exposed port number of the minio container
 
@@ -60,6 +60,6 @@ $ source .env.local
 ```
 After this, they will be loaded in your terminal, and you can use them:
 ```shell
-$ admin-up  # Starts the admin microservice
-$ admin-down  # Stops the admin microservice
+$ catalog-up  # Starts the catalog microservice
+$ catalog-down  # Stops the catalog microservice
 ```

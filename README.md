@@ -6,13 +6,13 @@ Repository for handling the Deye Web project infrastructure.
 
 The repository contains infrastructure for deye-web applications:
 * Comment microservice
-* Admin microservice
+* Catalog microservice
 * Customer frontend application
 * Deye-web core infrastructure
 
 All this stuff is located in corresponding directories, like:
 * Comment microservice's infrastructure -> `comment-app` directory
-* Admin microservice's infrastructure -> `admin-app` directory
+* Catalog microservice's infrastructure -> `catalog-app` directory
 * etc.
 
 If you need infrastructure changes for your application, commit them to your application infrastructure directory.
