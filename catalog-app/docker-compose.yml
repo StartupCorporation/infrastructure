@@ -1,13 +1,15 @@
-name: admin
+name: catalog
 
 services:
 
-  admin-web-app:
+  catalog-backend-app:
+    container_name: catalog-backend-app
+    image: startupcorp/catalog-backend-app
     build:
       dockerfile: Dockerfile
       context: .
       additional_contexts:
-        - src-admin-app=../app
+        - src-catalog-app=../app
     environment:
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
@@ -28,7 +30,7 @@ services:
       - RABBITMQ_CATALOG_RESERVATION_QUEUE=${RABBITMQ_RESERVATION_QUEUE}
       - RABBITMQ_ORDER_QUEUE=${RABBITMQ_ORDER_QUEUE}
     ports:
-      - "${DOCKER_ADMIN_APPLICATION_EXPOSE_PORT}:8080"
+      - "${DOCKER_CATALOG_APPLICATION_EXPOSE_PORT}:8080"
 networks:
   default:
     name: deye-web-network

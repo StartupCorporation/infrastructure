@@ -1,8 +1,10 @@
-name: fe-customer
+name: customer
 
 services:
 
-  customer-fe-app:
+  customer-frontend-app:
+    container_name: customer-frontend-app
+    image: startupcorp/customer-frontend-app
     build:
       dockerfile: Dockerfile
       context: .

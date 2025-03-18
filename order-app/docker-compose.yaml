@@ -1,14 +1,14 @@
-name: comment
+name: order
 
 x-app-setup: &app-setup
   build: &app-build
     args:
-      GROUP_ID: "${DOCKER_COMMENT_IMAGE_GROUP_ID}"
-      USER_ID: "${DOCKER_COMMENT_IMAGE_USER_ID}"
+      GROUP_ID: "${DOCKER_ORDER_IMAGE_GROUP_ID}"
+      USER_ID: "${DOCKER_ORDER_IMAGE_USER_ID}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
-      - comment-app=../app
+      - order-app=../app
       - shared-kernel=../../dw_shared_kernel
   environment: &app-env
     APPLICATION_TITLE: ${APPLICATION_TITLE}
@@ -25,38 +25,39 @@ x-app-setup: &app-setup
     RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     RABBITMQ_HOST: ${RABBITMQ_HOST}
     RABBITMQ_PORT: ${RABBITMQ_PORT}
+    RABBITMQ_CATALOG_RESERVATION_QUEUE: ${RABBITMQ_CATALOG_RESERVATION_QUEUE}
   volumes:
     - ../app/src:/app
     - ../../dw_shared_kernel/src/dw_shared_kernel:/usr/local/lib/python3.13/site-packages/dw_shared_kernel
 
 services:
 
-  comment-web-app:
+  order-backend-app:
     <<: *app-setup
-    image: startupcorp/comment-backend-app
-    container_name: comment-backend-app
+    image: startupcorp/order-backend-app
+    container_name: order-backend-app
     build:
       <<: *app-build
       target: backend-app
     ports:
-      - '${DOCKER_COMMENT_APPLICATION_EXPOSE_PORT}:${COMMENT_APPLICATION_PORT}'
+      - '${DOCKER_ORDER_APPLICATION_EXPOSE_PORT}:${ORDER_APPLICATION_PORT}'
     entrypoint: [
       "uvicorn", "interface.web.app:web_app",
       "--host", "0.0.0.0",
-      "--port", "${COMMENT_APPLICATION_PORT}",
+      "--port", "${ORDER_APPLICATION_PORT}",
       "--factory",
       "--reload",
       "--reload-dir", "/usr/local/lib/python3.13/site-packages/dw_shared_kernel",
       "--reload-dir", ".",
     ]
     depends_on:
-      comment-migration-service:
+      order-migration-service:
         condition: service_completed_successfully
 
-  comment-queue-consumer:
+  order-queue-consumer:
     <<: *app-setup
-    image: startupcorp/comment-queue-consumer
-    container_name: comment-queue-consumer
+    image: startupcorp/order-queue-consumer
+    container_name: order-queue-consumer
     build:
       <<: *app-build
       target: queue-consumer
@@ -67,19 +68,21 @@ services:
     ]
     environment:
       <<: *app-env
-      RABBITMQ_COMMENT_PRODUCT_QUEUE: "${RABBITMQ_COMMENT_PRODUCT_QUEUE}"
+      RABBITMQ_ORDER_QUEUE: ${RABBITMQ_ORDER_QUEUE}
     depends_on:
-      comment-migration-service:
+      order-migration-service:
         condition: service_completed_successfully
 
-  comment-migration-service:
+  order-migration-service:
     <<: *app-setup
-    image: startupcorp/comment-migration-service
-    container_name: comment-migration-service
+    image: startupcorp/order-migration-service
+    container_name: order-migration-service
     build:
       <<: *app-build
       target: migration-service
-    command: [ "alembic", "upgrade", "head" ]
+    command: "migration-run"
+    volumes:
+      - ../app/src/infrastructure/database/relational/migrations/:/app/migrations
 
 networks:
   default:
