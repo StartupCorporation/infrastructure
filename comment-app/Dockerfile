@@ -5,9 +5,9 @@ ARG USER_ID
 FROM python:3.13 AS dependencies
 COPY --from=comment-app requirements/requirements.web.txt requirements/requirements.queue.txt requirements/requirements.migration.txt .
 COPY --from=shared-kernel . shared_kernel/
-RUN pip install --no-cache-dir -r requirements.web.txt --prefix=web-service-venv -q ./shared_kernel && \
-    pip install --no-cache-dir -r requirements.queue.txt --prefix=queue-consumer-venv -q ./shared_kernel && \
-    pip install --no-cache-dir -r requirements.migration.txt --prefix=migration-service-venv -q ./shared_kernel
+RUN pip install --no-cache-dir -r requirements.web.txt --prefix=web-service-venv && \
+    pip install --no-cache-dir -r requirements.queue.txt --prefix=queue-consumer-venv && \
+    pip install --no-cache-dir -r requirements.migration.txt --prefix=migration-service-venv
 
 
 FROM python:3.13-slim AS base-app

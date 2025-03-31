@@ -5,8 +5,8 @@ ARG USER_ID
 FROM python:3.13 AS dependencies
 COPY --from=order-app requirements/requirements.web.txt requirements/requirements.queue.txt .
 COPY --from=shared-kernel . shared_kernel/
-RUN pip install --no-cache-dir -r requirements.web.txt --prefix=web-service-venv -q ./shared_kernel && \
-    pip install --no-cache-dir -r requirements.queue.txt --prefix=queue-consumer-venv -q ./shared_kernel
+RUN pip install --no-cache-dir -r requirements.web.txt --prefix=web-service-venv && \
+    pip install --no-cache-dir -r requirements.queue.txt --prefix=queue-consumer-venv
 
 
 FROM python:3.13-slim AS base-app
