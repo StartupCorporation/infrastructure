@@ -1,0 +1,76 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    ports:
+      - '${DOCKER_RABBITMQ_EXPOSE_PORT_UI}:15672'
+      - '${DOCKER_RABBITMQ_EXPOSE_PORT_AMQP}:5672'
+    environment:
+      - "RABBITMQ_DEFAULT_USER=${INFRA_RABBITMQ_USERNAME}"
+      - "RABBITMQ_DEFAULT_PASS=${INFRA_RABBITMQ_PASSWORD}"
+      - "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}]"
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  database:
+    image: postgres:latest
+    environment:
+      - "POSTGRES_USER=${POSTGRES_USERNAME}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+      - "POSTGRES_DB=${POSTGRES_DATABASE}"
+    ports:
+      - '${DOCKER_DB_EXPOSE_PORT}:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE}" ]
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  resources-setup:
+    container_name: resources-setup-script
+    image: alpine
+    entrypoint: [ "sh","-c" ]
+    command:
+      - |
+        apk -q add curl python3
+
+        curl --no-progress-meter -s -o /usr/local/bin/rabbitmqadmin http://${SETUP_RABBITMQ_HOST}:${SETUP_RABBITMQ_PORT}/cli/rabbitmqadmin
+        chmod +x /usr/local/bin/rabbitmqadmin
+
+        alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
+
+        rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  comment-migration-service:
+    image: startupcorp/comment-migration-service
+    entrypoint: [ "alembic", "upgrade", "head" ]
+    environment:
+      APPLICATION_TITLE: ${APPLICATION_TITLE}
+      APPLICATION_DEBUG: ${APPLICATION_DEBUG}
+      APPLICATION_VERSION: ${APPLICATION_VERSION}
+
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_HOST: database
+      DATABASE_PORT: 5432
+      DATABASE_DATABASE: ${DATABASE_DATABASE}
+
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+    depends_on:
+      database:
+        condition: service_healthy
