@@ -69,6 +69,29 @@ services:
       timeout: 15s
       retries: 30
 
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "${DOCKER_GRAFANA_EXPOSE_PORT}:3000"
+    volumes:
+      - ./grafana_config/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./grafana_config/dashboards:/var/lib/grafana/dashboards
+      - ./grafana_config/datasources/:/etc/grafana/provisioning/datasources/
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    ports:
+      - "${DOCKER_PROMETHEUS_EXPOSE_PORT}:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    restart: always
+
   resources-setup:
     container_name: resources-setup-script
     image: alpine
@@ -187,4 +210,3 @@ volumes:
   rabbitmq_data:
   database_data:
   minio_data:
-
