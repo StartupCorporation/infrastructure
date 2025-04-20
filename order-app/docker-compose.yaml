@@ -5,6 +5,7 @@ x-app-setup: &app-setup
     args:
       GROUP_ID: "${DOCKER_ORDER_IMAGE_GROUP_ID}"
       USER_ID: "${DOCKER_ORDER_IMAGE_USER_ID}"
+      INSTALL_LOCAL_SHARED_KERNEL: "${DOCKER_INSTALL_LOCAL_SHARED_KERNEL}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
@@ -28,7 +29,6 @@ x-app-setup: &app-setup
     RABBITMQ_CATALOG_RESERVATION_QUEUE: ${RABBITMQ_CATALOG_RESERVATION_QUEUE}
   volumes:
     - ../app/src:/app
-    - ../../dw_shared_kernel/src/dw_shared_kernel:/usr/local/lib/python3.13/site-packages/dw_shared_kernel
 
 services:
 
@@ -47,7 +47,6 @@ services:
       "--port", "${ORDER_APPLICATION_PORT}",
       "--factory",
       "--reload",
-      "--reload-dir", "/usr/local/lib/python3.13/site-packages/dw_shared_kernel",
       "--reload-dir", ".",
     ]
     depends_on:
