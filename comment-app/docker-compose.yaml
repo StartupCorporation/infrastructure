@@ -5,6 +5,7 @@ x-app-setup: &app-setup
     args:
       GROUP_ID: "${DOCKER_COMMENT_IMAGE_GROUP_ID}"
       USER_ID: "${DOCKER_COMMENT_IMAGE_USER_ID}"
+      INSTALL_LOCAL_SHARED_KERNEL: "${DOCKER_INSTALL_LOCAL_SHARED_KERNEL}"
     dockerfile: Dockerfile
     context: .
     additional_contexts:
@@ -27,7 +28,6 @@ x-app-setup: &app-setup
     RABBITMQ_PORT: ${RABBITMQ_PORT}
   volumes:
     - ../app/src:/app
-    - ../../dw_shared_kernel/src/dw_shared_kernel:/usr/local/lib/python3.13/site-packages/dw_shared_kernel
 
 services:
 
@@ -38,6 +38,10 @@ services:
     build:
       <<: *app-build
       target: backend-app
+    environment:
+      <<: *app-env
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
     ports:
       - '${DOCKER_COMMENT_APPLICATION_EXPOSE_PORT}:${COMMENT_APPLICATION_PORT}'
     entrypoint: [
@@ -46,7 +50,6 @@ services:
       "--port", "${COMMENT_APPLICATION_PORT}",
       "--factory",
       "--reload",
-      "--reload-dir", "/usr/local/lib/python3.13/site-packages/dw_shared_kernel",
       "--reload-dir", ".",
     ]
     depends_on:
