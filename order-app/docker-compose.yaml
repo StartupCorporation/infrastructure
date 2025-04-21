@@ -39,6 +39,10 @@ services:
     build:
       <<: *app-build
       target: backend-app
+    environment:
+      <<: *app-env
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
     ports:
       - '${DOCKER_ORDER_APPLICATION_EXPOSE_PORT}:${ORDER_APPLICATION_PORT}'
     entrypoint: [
