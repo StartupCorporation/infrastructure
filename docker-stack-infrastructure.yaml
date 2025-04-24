@@ -1,0 +1,210 @@
+version: "3.8"
+
+services:
+
+  database:
+    image: postgres:latest
+    hostname: database
+    ports:
+      - '${DOCKER_DB_EXPOSE_PORT}:5432'
+    environment:
+      - "POSTGRES_USER=${POSTGRES_USERNAME}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+      - "POSTGRES_DB=postgres"
+    volumes:
+      - database_data:/var/lib/postgresql/data/
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "500M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+      placement:
+        constraints:
+          - node.role == worker
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d postgres" ]
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    hostname: rabbitmq
+    ports:
+      - '${DOCKER_RABBITMQ_EXPOSE_PORT}:15672'
+    restart: always
+    environment:
+      - "RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}"
+      - "RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}"
+      - "RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}]"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "500M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+      placement:
+        constraints:
+          - node.role == worker
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 1s
+      timeout: 10s
+      retries: 15
+
+  minio:
+    image: quay.io/minio/minio
+    hostname: minio
+    ports:
+      - "${DOCKER_MINIO_EXPOSE_PORT_UI}:9000"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "500M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+      placement:
+        constraints:
+          - node.role == worker
+    healthcheck:
+      test: "curl -k -f http://localhost:9001/minio/health/live || exit 1"
+      interval: 1s
+      timeout: 15s
+      retries: 30
+
+  resources-setup:
+    image: alpine
+    entrypoint: [ "sh","-c" ]
+    command:
+      - |
+        sleep 20
+        
+        apk -q add curl python3 postgresql-client minio-client
+
+        mcli alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY}
+        mcli mb myminio/${MINIO_BUCKET_NAME}
+        mcli anonymous set download myminio/${MINIO_BUCKET_NAME}
+
+        curl --no-progress-meter -s -o /usr/local/bin/rabbitmqadmin http://${SETUP_RABBITMQ_HOST}:${SETUP_RABBITMQ_PORT}/cli/rabbitmqadmin
+        chmod +x /usr/local/bin/rabbitmqadmin
+
+        alias rabbitmqadmin="rabbitmqadmin --host=${SETUP_RABBITMQ_HOST} --port=${SETUP_RABBITMQ_PORT} --username=${SETUP_RABBITMQ_USERNAME} --password=${SETUP_RABBITMQ_PASSWORD}"
+        alias psql="PGPASSWORD=${SETUP_DB_PASSWORD} psql -U ${SETUP_DB_USERNAME} -h ${SETUP_DB_HOST} -p ${SETUP_DB_PORT} -d postgres"
+
+        rabbitmqadmin declare exchange name=${SETUP_RABBITMQ_EXCHANGE_NAME} type=direct durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE} durable=true
+        rabbitmqadmin -q declare queue name=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} durable=true
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE}
+
+        rabbitmqadmin declare binding \
+          source=${SETUP_RABBITMQ_EXCHANGE_NAME} \
+          destination=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE} \
+          routing_key=${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE}
+
+        rabbitmqadmin declare policy \
+          name="DLXCommentProductQueue" \
+          pattern="^${SETUP_RABBITMQ_COMMENT_PRODUCT_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_COMMENT_PRODUCT_QUEUE}"}' \
+          apply-to=queues
+
+        rabbitmqadmin declare policy \
+          name="DLXReservationQueue" \
+          pattern="^${SETUP_RABBITMQ_CATALOG_RESERVATION_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_CATALOG_RESERVATION_QUEUE}"}' \
+          apply-to=queues
+
+        rabbitmqadmin declare policy \
+          name="DLXOrderQueue" \
+          pattern="^${SETUP_RABBITMQ_ORDER_RESERVATION_QUEUE}$" \
+          definition='{"dead-letter-exchange": "${SETUP_RABBITMQ_EXCHANGE_NAME}", "dead-letter-routing-key": "${SETUP_RABBITMQ_DEAD_LETTER_ORDER_RESERVATION_QUEUE}"}' \
+          apply-to=queues
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_CATALOG_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_CATALOG_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_CATALOG_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_CATALOG_USERNAME} WITH PASSWORD '${SETUP_DB_CATALOG_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_CATALOG_DATABASE} OWNER TO ${SETUP_DB_CATALOG_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_CATALOG_DATABASE} TO ${SETUP_DB_CATALOG_USERNAME}"
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_COMMENT_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_COMMENT_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_COMMENT_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_COMMENT_USERNAME} WITH PASSWORD '${SETUP_DB_COMMENT_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_COMMENT_DATABASE} OWNER TO ${SETUP_DB_COMMENT_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_COMMENT_DATABASE} TO ${SETUP_DB_COMMENT_USERNAME}"
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME} WITH PASSWORD '${SETUP_DB_IDENTITY_AND_ACCESS_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE} OWNER TO ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_IDENTITY_AND_ACCESS_DATABASE} TO ${SETUP_DB_IDENTITY_AND_ACCESS_USERNAME}"
+
+        psql -c "SELECT 1 FROM pg_database WHERE datname = '${SETUP_DB_ORDER_DATABASE}'" \
+          | grep -q 1 || psql -c "CREATE DATABASE ${SETUP_DB_ORDER_DATABASE}"
+        psql -c "SELECT 1 FROM pg_roles WHERE rolname = '${SETUP_DB_ORDER_USERNAME}'" \
+          | grep -q 1 || psql -c "CREATE USER ${SETUP_DB_ORDER_USERNAME} WITH PASSWORD '${SETUP_DB_ORDER_PASSWORD}'"
+        psql -c "ALTER DATABASE ${SETUP_DB_ORDER_DATABASE} OWNER TO ${SETUP_DB_ORDER_USERNAME}"
+        psql -c "GRANT ALL PRIVILEGES ON DATABASE ${SETUP_DB_ORDER_DATABASE} TO ${SETUP_DB_ORDER_USERNAME}"
+
+networks:
+  default:
+    name: deye-web-prod-network
+    external: true
+
+volumes:
+  rabbitmq_data:
+  database_data:
+  minio_data:
