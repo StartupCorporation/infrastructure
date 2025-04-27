@@ -15,14 +15,14 @@ services:
       - JWT_EXPIRATION_MINUTES=${JWT_EXPIRATION_MINUTES}
       - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${JWT_REFRESH_TOKEN_EXPIRATION_DAYS}
     deploy:
-      replicas: 3
+      replicas: 2
       resources:
         limits:
           cpus: "0.5"
-          memory: "500M"
+          memory: "256M"
         reservations:
           cpus: "0.25"
-          memory: "256M"
+          memory: "128M"
       restart_policy:
         condition: on-failure
       placement:

@@ -25,14 +25,14 @@ services:
       - RABBITMQ_ORDER_QUEUE=${RABBITMQ_ORDER_QUEUE}
       - FE_URL=${FE_URL}
     deploy:
-      replicas: 3
+      replicas: 2
       resources:
         limits:
           cpus: "0.5"
-          memory: "500M"
+          memory: "256M"
         reservations:
           cpus: "0.25"
-          memory: "256M"
+          memory: "128M"
       restart_policy:
         condition: on-failure
       placement:
