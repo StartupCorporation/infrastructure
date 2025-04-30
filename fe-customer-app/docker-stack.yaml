@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+
+  customer-frontend-app:
+    image: startupcorp/customer-frontend-app:latest
+    environment:
+      - API_URL=${API_URL}
+      - API_ORDER_URL=${API_ORDER_URL}
+      - API_COMMENTS_URL=${API_COMMENTS_URL}
+      - API_CALLBACK_URL=${API_CALLBACK_URL}
+      - IMAGES_CONTAINER_URL=${IMAGES_CONTAINER_URL}
+      - USE_MOCKS=${USE_MOCKS}
+    ports:
+      - target: 4000
+        published: ${DOCKER_CUSTOMER_FE_APPLICATION_EXPOSE_PORT}
+        protocol: tcp
+        mode: host
+    entrypoint: ["node", "server/server.mjs"]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "256M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == worker
+
+networks:
+  default:
+    name: deye-web-prod-network
+    external: true
