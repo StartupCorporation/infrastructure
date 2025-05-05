@@ -13,6 +13,10 @@ services:
     environment:
       API_URL: ${API_URL}
       USE_MOCKS: ${USE_MOCKS}
+      API_ORDER_URL: ${API_ORDER_URL}
+      API_COMMENTS_URL: ${API_COMMENTS_URL}
+      API_CALLBACK_URL: ${API_CALLBACK_URL}
+      IMAGES_CONTAINER_URL: ${IMAGES_CONTAINER_URL}
     ports:
       - "${DOCKER_CUSTOMER_FE_APPLICATION_EXPOSE_PORT}:4000"
     entrypoint: [ "node", "server/server.mjs" ]
