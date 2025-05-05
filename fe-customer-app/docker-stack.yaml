@@ -11,11 +11,6 @@ services:
       - API_CALLBACK_URL=${API_CALLBACK_URL}
       - IMAGES_CONTAINER_URL=${IMAGES_CONTAINER_URL}
       - USE_MOCKS=${USE_MOCKS}
-    ports:
-      - target: 4000
-        published: ${DOCKER_CUSTOMER_FE_APPLICATION_EXPOSE_PORT}
-        protocol: tcp
-        mode: host
     entrypoint: ["node", "server/server.mjs"]
     deploy:
       replicas: 1
