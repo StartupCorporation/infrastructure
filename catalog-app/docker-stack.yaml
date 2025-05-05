@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+
+  catalog-backend-app:
+    image: startupcorp/catalog-backend-app:latest
+    environment:
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_DATABASE=${DATABASE_DATABASE}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      - RABBITMQ_EXCHANGE_NAME=${RABBITMQ_EXCHANGE_NAME}
+      - RABBITMQ_COMMENT_PRODUCT_QUEUE=${RABBITMQ_COMMENT_PRODUCT_QUEUE}
+      - RABBITMQ_CATALOG_RESERVATION_QUEUE=${RABBITMQ_CATALOG_RESERVATION_QUEUE}
+      - RABBITMQ_ORDER_QUEUE=${RABBITMQ_ORDER_QUEUE}
+      - FE_URL=${FE_URL}
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "256M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == worker
+
+networks:
+  default:
+    name: deye-web-prod-network
+    external: true
