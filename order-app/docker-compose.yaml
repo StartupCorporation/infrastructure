@@ -40,7 +40,6 @@ x-app-setup: &app-setup
 
     CATALOG_SERVICE_HOST: ${CATALOG_SERVICE_HOST}
     CATALOG_SERVICE_PORT: ${CATALOG_SERVICE_PORT}
-    CATALOG_SERVICE_API_KEY: ${CATALOG_SERVICE_API_KEY}
   volumes:
     - ../app/src:/app
 
