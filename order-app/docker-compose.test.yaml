@@ -71,3 +71,9 @@ services:
     depends_on:
       database:
         condition: service_healthy
+
+  smtp-server:
+    image: axllent/mailpit
+    container_name: order-smtp-server
+    ports:
+      - "${DOCKER_SMTP_SERVER_EXPOSE_PORT}:8025"
