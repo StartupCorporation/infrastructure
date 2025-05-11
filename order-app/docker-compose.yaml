@@ -27,6 +27,19 @@ x-app-setup: &app-setup
     RABBITMQ_HOST: ${RABBITMQ_HOST}
     RABBITMQ_PORT: ${RABBITMQ_PORT}
     RABBITMQ_CATALOG_RESERVATION_QUEUE: ${RABBITMQ_CATALOG_RESERVATION_QUEUE}
+
+    SMTP_HOST: ${SMTP_HOST}
+    SMTP_PORT: ${SMTP_PORT}
+    SMTP_TIMEOUT: ${SMTP_TIMEOUT}
+    SMTP_USE_TLS: ${SMTP_USE_TLS}
+    SMTP_SENDER_EMAIL: ${SMTP_SENDER_EMAIL}
+
+    IAC_HOST: ${IAC_HOST}
+    IAC_PORT: ${IAC_PORT}
+    IAC_API_KEY: ${IAC_API_KEY}
+
+    CATALOG_SERVICE_HOST: ${CATALOG_SERVICE_HOST}
+    CATALOG_SERVICE_PORT: ${CATALOG_SERVICE_PORT}
   volumes:
     - ../app/src:/app
 
@@ -86,6 +99,12 @@ services:
     command: "migration-run"
     volumes:
       - ../app/src/infrastructure/database/relational/migrations/:/app/migrations
+
+  smtp-server:
+    image: axllent/mailpit
+    container_name: order-smtp-server
+    ports:
+      - "${DOCKER_SMTP_SERVER_EXPOSE_PORT}:8025"
 
 networks:
   default:
