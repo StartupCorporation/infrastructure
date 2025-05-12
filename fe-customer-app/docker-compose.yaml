@@ -12,6 +12,10 @@ services:
         - src-fe-customer-app=../app
     environment:
       API_URL: ${API_URL}
+      API_ORDER_URL: ${API_ORDER_URL}
+      API_COMMENTS_URL: ${API_COMMENTS_URL}
+      API_CALLBACK_URL: ${API_CALLBACK_URL}
+      IMAGES_CONTAINER_URL: ${IMAGES_CONTAINER_URL}
       USE_MOCKS: ${USE_MOCKS}
       API_ORDER_URL: ${API_ORDER_URL}
       API_COMMENTS_URL: ${API_COMMENTS_URL}
